@@ -16,8 +16,16 @@ export async function POST() {
       apiVersion: '2023-10-16' as any,
     });
 
-    // Dominio limpio forzado con HTTPS para evitar el error "Not a valid URL"
-    const domain = (process.env.NEXT_PUBLIC_APP_URL || 'https://ai-bug-reporter-fawn.vercel.app').replace(/\/$/, '');
+    // Aseguramos una URL 100% válida con HTTPS
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-bug-reporter-fawn.vercel.app';
+    baseUrl = baseUrl.trim();
+    
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    
+    // Eliminamos barras al final para evitar //
+    baseUrl = baseUrl.replace(/\/+$/, '');
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -35,8 +43,8 @@ export async function POST() {
         },
       ],
       mode: 'payment',
-      success_url: `${domain}?success=true`,
-      cancel_url: `${domain}?canceled=true`,
+      success_url: `${baseUrl}/?success=true`,
+      cancel_url: `${baseUrl}/?canceled=true`,
     });
 
     return NextResponse.json({ url: session.url });
