@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function Home() {
   const [inputText, setInputText] = useState<string>('');
@@ -9,7 +9,10 @@ export default function Home() {
   const [language, setLanguage] = useState<'ES' | 'EN'>('ES');
   const [reportCount, setReportCount] = useState<number>(0);
   const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [videoDuration, setVideoDuration] = useState<number>(5);
   const [isCapturingNetwork, setIsCapturingNetwork] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [gherkinText, setGherkinText] = useState<string | null>(null);
 
   // Modales de integración
   const [showJiraModal, setShowJiraModal] = useState<boolean>(false);
@@ -30,6 +33,13 @@ export default function Home() {
   const [azureProject, setAzureProject] = useState<string>('');
   const [azurePat, setAzurePat] = useState<string>('');
 
+  // Detección de dispositivo móvil
+  useEffect(() => {
+    const userAgent = typeof window !== 'undefined' ? navigator.userAgent : '';
+    const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    setIsMobile(mobileCheck);
+  }, []);
+
   // Diccionario multilenguaje completo
   const t = {
     ES: {
@@ -39,9 +49,12 @@ export default function Home() {
       usageCount: 'reportes creados',
       status: 'Servidor de IA Operativo',
       videoTitle: 'Capturador de Video con IA',
-      videoDesc: 'Seleccioná tu pestaña o pantalla para grabar 5s. La IA analizará la interacción para extraer los pasos automáticamente.',
-      videoBtn: 'Grabar Pantalla',
-      videoRec: '🔴 Capturando pantalla (5s)...',
+      videoDescDesktop: 'Seleccioná la duración (1-60s) y tu pantalla para grabar. La IA extraerá las acciones automáticamente.',
+      videoDescMobile: 'Subí un video o grabación de pantalla tomada desde tu celular para que la IA la analice.',
+      videoBtnDesktop: 'Grabar Pantalla',
+      videoBtnMobile: 'Subir Video desde Celular',
+      videoRec: `🔴 Capturando pantalla (${videoDuration}s)...`,
+      durationLabel: 'Duración:',
       netTitle: 'Captura Inteligente de Red y Consola',
       netDesc: 'Interceptá fallos HTTP 4xx/5xx y excepciones de JavaScript en tiempo real directamente desde la consola.',
       netBtn: 'Capturar Errores de Red',
@@ -55,11 +68,16 @@ export default function Home() {
       // Card de Resultado
       moduleLabel: 'Módulo:',
       envLabel: 'Entorno:',
+      prioLabel: 'Prioridad Backlog:',
+      precondTitle: '⚙️ Precondiciones del Test',
       analyzedImageTag: 'Captura Analizada por IA:',
       stepsTitle: '📋 Pasos para Reproducir',
       expTitle: '✅ Resultado Esperado',
       actTitle: '❌ Resultado Actual',
       rootTitle: '🔍 Análisis de Causa Raíz (Root Cause Analysis):',
+      aiInsightsTitle: '🤖 Sugerencias y Diagnóstico IA (Smart Triage):',
+      networkLogsTitle: '🚨 Consola de Red Parseda (HTTP Errors):',
+      btnGherkin: 'Convertir a BDD / Gherkin 🥒',
       exportJira: 'Exportar a Jira',
       exportTrello: 'Exportar a Trello',
       exportAzure: 'Exportar a Azure DevOps',
@@ -93,9 +111,12 @@ export default function Home() {
       usageCount: 'reports created',
       status: 'AI Server Operational',
       videoTitle: 'Video-to-Bug AI Interceptor',
-      videoDesc: 'Select your window or screen to record 5s. AI will process frames to extract steps automatically.',
-      videoBtn: 'Record Screen',
-      videoRec: '🔴 Capturing screen (5s)...',
+      videoDescDesktop: 'Select duration (1-60s) and your screen/window to record. AI will extract steps automatically.',
+      videoDescMobile: 'Upload a video or screen recording from your phone for AI analysis.',
+      videoBtnDesktop: 'Record Screen',
+      videoBtnMobile: 'Upload Video from Phone',
+      videoRec: `🔴 Capturing screen (${videoDuration}s)...`,
+      durationLabel: 'Duration:',
       netTitle: 'Smart Network & Console Capture',
       netDesc: 'Intercept HTTP 4xx/5xx errors and JS console exceptions in real-time directly from the browser.',
       netBtn: 'Capture Network Errors',
@@ -109,11 +130,16 @@ export default function Home() {
       // Result Card
       moduleLabel: 'Module:',
       envLabel: 'Env:',
+      prioLabel: 'Backlog Priority:',
+      precondTitle: '⚙️ Test Preconditions',
       analyzedImageTag: 'AI Analyzed Screenshot:',
       stepsTitle: '📋 Steps to Reproduce',
       expTitle: '✅ Expected Result',
       actTitle: '❌ Actual Result',
       rootTitle: '🔍 Root Cause Analysis:',
+      aiInsightsTitle: '🤖 AI Diagnostic & Triage (Smart Triage):',
+      networkLogsTitle: '🚨 Parsed Network Console (HTTP Errors):',
+      btnGherkin: 'Convert to BDD / Gherkin 🥒',
       exportJira: 'Export to Jira',
       exportTrello: 'Export to Trello',
       exportAzure: 'Export to Azure DevOps',
@@ -142,7 +168,6 @@ export default function Home() {
     }
   }[language];
 
-  // Captura de eventos del portapapeles (Ctrl + V)
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -193,15 +218,18 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           platform,
-          title: generatedReport?.title || 'Bug Report desde AI Bug Reporter',
-          description: JSON.stringify(generatedReport),
-          credentials
+          credentials,
+          bugData: {
+            title: generatedReport?.title || 'Bug Report desde AI Bug Reporter',
+            description: JSON.stringify(generatedReport, null, 2)
+          }
         })
       });
+      const data = await res.json();
       if (res.ok) {
         alert(`¡Exportado a ${platform.toUpperCase()} con éxito!`);
       } else {
-        alert(`Error exportando a ${platform.toUpperCase()}`);
+        alert(data.error || `Error exportando a ${platform.toUpperCase()}`);
       }
     } catch (err) {
       console.error(err);
@@ -209,7 +237,30 @@ export default function Home() {
     }
   };
 
-  // Grabador de pantalla
+  // Convertidor a BDD / Gherkin
+  const generateGherkin = () => {
+    if (!generatedReport) return;
+    
+    const preconditionsFormatted = generatedReport.preconditions
+      ? generatedReport.preconditions.map((p: string) => `  Given ${p}`).join('\n')
+      : `  Given el usuario está autenticado en el entorno ${generatedReport.environment}`;
+
+    const stepsFormatted = generatedReport.steps
+      ? generatedReport.steps.map((s: string) => `  And ${s}`).join('\n')
+      : '  And realiza las acciones sobre la aplicación';
+
+    const gherkin = `Feature: ${generatedReport.title}
+
+  Scenario: Validar comportamiento ante fallo en ${generatedReport.module}
+${preconditionsFormatted}
+${stepsFormatted}
+    Then el sistema debería responder: "${generatedReport.expected}"
+    But el resultado obtenido fue: "${generatedReport.actual}"`;
+
+    setGherkinText(gherkin);
+  };
+
+  // Grabador de pantalla Desktop
   const handleRecordVideo = async () => {
     if (!checkLimit()) return;
 
@@ -220,34 +271,45 @@ export default function Home() {
       });
 
       setIsRecording(true);
+      setGherkinText(null);
 
       setTimeout(() => {
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
 
         setGeneratedReport({
-          title: language === 'ES' ? "Error Crítico durante Checkout" : "Critical Checkout Exception",
-          severity: "CRITICAL 🔴",
+          title: language === 'ES' ? "Error Crítico durante Checkout de Pago" : "Critical Checkout Payment Exception",
+          severity: "BLOCKER / CRITICAL 🔴",
+          priority: "P1 - Immediate Fix Required",
           module: "Payment Gateway / Frontend",
           environment: "Chrome 128 / macOS Sonoma",
-          steps: language === 'ES' ? [
-            "Navegar a la vista de carrito.",
-            "Hacer clic en 'Pagar con Tarjeta'.",
-            "Interacción congelada por 1.4s tras click event.",
-            "Excepción de JavaScript no capturada en consola."
-          ] : [
-            "Navigate to cart view.",
-            "Click on 'Pay with Card'.",
-            "Frozen interaction for 1.4s after click event.",
-            "Uncaught JavaScript Exception in console."
+          preconditions: [
+            "Usuario autenticado con rol 'Customer'.",
+            "Carrito activo con al menos 1 producto en stock.",
+            "Método de pago habilitado en la pasarela."
           ],
-          expected: language === 'ES' ? "Redirección inmediata a la pasarela de Stripe." : "Immediate redirect to Stripe gateway.",
-          actual: language === 'ES' ? "Pantalla bloqueada sin respuesta visual al usuario." : "Screen blocked without visual feedback.",
-          rootCause: "Uncaught TypeError: Cannot read properties of undefined (reading 'token')"
+          steps: [
+            "1. Ir a la vista del carrito de compras con ítems agregados.",
+            "2. Hacer clic en el botón 'Pagar con Tarjeta'.",
+            "3. Ingresar las credenciales de prueba y presionar 'Confirmar Pago'.",
+            "4. Observar la pantalla de procesamiento congelada por más de 1.4s."
+          ],
+          expected: language === 'ES' ? "Redirección inmediata a la pasarela de confirmación de Stripe." : "Immediate redirect to Stripe payment confirmation.",
+          actual: language === 'ES' ? "Pantalla congelada sin respuesta visual ni confirmación al cliente." : "Frozen UI without visual feedback or confirmation to the customer.",
+          rootCause: "Uncaught TypeError: Cannot read properties of undefined (reading 'token')",
+          aiInsights: language === 'ES' ? [
+            "💡 Probable regresión introducida en la v2.4.1 en el manejo de tokens asíncronos.",
+            "⚠️ Riesgo de alto impacto: 100% de carritos bloqueados en el checkout.",
+            "🤖 Tests sugeridos: Añadir test E2E en Playwright/Cypress cubriendo respuesta 200 con payload nulo."
+          ] : [
+            "💡 Likely regression introduced in v2.4.1 in async token handling.",
+            "⚠️ High-impact risk: 100% of checkout funnels currently blocked.",
+            "🤖 Suggested tests: Add Playwright/Cypress E2E test handling null token payloads."
+          ]
         });
 
         setReportCount(prev => prev + 1);
-      }, 5000);
+      }, videoDuration * 1000);
 
     } catch (err) {
       console.error("Permiso de grabación denegado:", err);
@@ -255,51 +317,105 @@ export default function Home() {
     }
   };
 
-  // Capturador de red
+  // Carga de video Mobile
+  const handleMobileVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!checkLimit()) return;
+    const file = e.target.files?.[0];
+    if (file) {
+      setGherkinText(null);
+      setGeneratedReport({
+        title: language === 'ES' ? "Error de Touch/Renderizado en Navegación Móvil" : "Mobile Touch/Rendering Glitch",
+        severity: "MAJOR 🟠",
+        priority: "P2 - High Priority",
+        module: "Mobile Web View",
+        environment: "iOS Safari / Android Chrome",
+        preconditions: [
+          "Dispositivo con pantalla táctil activa.",
+          "Navegación en modo portrait (vertical)."
+        ],
+        steps: [
+          "1. Ir al menú desplegable superior en pantalla mobile.",
+          "2. Hacer clic / tap en la opción 'Mi Perfil'.",
+          "3. Tocar repetidamente el botón de cierre del modal."
+        ],
+        expected: language === 'ES' ? "Cierre fluido del menú táctil." : "Smooth touch menu close action.",
+        actual: language === 'ES' ? "Lag visual, menú congelado y elementos superpuestos." : "Visual lag, frozen menu and overlapping elements.",
+        rootCause: "Mobile viewport overflow & touch-action CSS mismatch",
+        aiInsights: [
+          "💡 Revisa las reglas @media query para viewports menores a 480px.",
+          "🤖 Tests sugeridos: Simular touch events acelerados en dispositivos móviles emulados."
+        ]
+      });
+      setReportCount(prev => prev + 1);
+    }
+  };
+
+  // Capturador de red (Filtro HTTP 4xx/5xx)
   const handleCaptureNetwork = () => {
     if (!checkLimit()) return;
 
     setIsCapturingNetwork(true);
+    setGherkinText(null);
+
     setTimeout(() => {
       setIsCapturingNetwork(false);
       setGeneratedReport({
-        title: language === 'ES' ? "Fallo HTTP 500 en API Endpoint" : "HTTP 500 Failure on API Endpoint",
-        severity: "MAJOR 🟠",
+        title: language === 'ES' ? "Fallo de Servidor HTTP 500 / 504 Gateway Timeout" : "HTTP 500 / 504 Gateway Timeout Failure",
+        severity: "BLOCKER / CRITICAL 🔴",
+        priority: "P1 - Urgent Fix Required",
         module: "API Gateway / Billing Service",
         environment: "Node.js v20 / Next.js API Routes",
-        steps: [
-          "POST /api/v1/payments/charge HTTP/1.1",
-          "Headers: Authorization: Bearer *****",
-          "Payload: { amount: 1500, currency: 'usd' }"
+        preconditions: [
+          "Servicio de pagos de terceros accesible.",
+          "Token JWT válido presente en el header Authorization."
         ],
-        expected: language === 'ES' ? "HTTP 200 OK con checkout_url." : "HTTP 200 OK with checkout_url.",
-        actual: "HTTP 500 Internal Server Error (Timeout 504).",
-        rootCause: "Gateway Timeout: upstream service failed to respond in 5000ms"
+        steps: [
+          "1. Ir a la sección de Checkout / Cobros.",
+          "2. Hacer clic en el botón 'Generar Suscripción'.",
+          "3. Inspeccionar las peticiones salientes en la pestaña Network."
+        ],
+        expected: language === 'ES' ? "HTTP 200 OK con payload checkout_url." : "HTTP 200 OK with checkout_url payload.",
+        actual: "HTTP 500 Internal Server Error tras responder HTTP 504 Timeout.",
+        rootCause: "Gateway Timeout: upstream payment service failed to respond within 5000ms",
+        networkLogs: [
+          { status: "500 Internal Server Error", url: "POST /api/v1/payments/charge", payload: '{"error": "Database lock timeout", "code": 50012}' },
+          { status: "401 Unauthorized", url: "GET /api/v1/user/auth-check", payload: '{"message": "Token expired or invalid signature"}' }
+        ],
+        aiInsights: [
+          "💡 La BD colapsó por retries automáticos no controlados en el microservicio de Billing.",
+          "🤖 Sugerencia: Aplicar patrón Circuit Breaker y aumentar timeout de conexión."
+        ]
       });
       setReportCount(prev => prev + 1);
     }, 1500);
   };
 
-  // Generador manual / por captura
+  // Generador manual / captura
   const handleGenerateReport = () => {
     if (!checkLimit()) return;
 
+    setGherkinText(null);
     setGeneratedReport({
       title: language === 'ES' ? "Reporte Generado por Captura / Logs" : "Screenshot / Log-Based Generated Report",
-      severity: pastedImage ? "CRITICAL 🔴" : "MEDIUM 🟡",
+      severity: pastedImage ? "MINOR / VISUAL 🟡" : "MEDIUM 🟠",
+      priority: pastedImage ? "P4 - Low Priority" : "P3 - Normal Priority",
       module: pastedImage ? "UI Layout / Inspección Visual" : "Componente General",
       environment: "Web Application",
-      steps: language === 'ES' ? [
-        "Ingreso de datos o captura adjunta en formulario.",
-        "Análisis visual de componentes procesado por IA."
-      ] : [
-        "Data or attached screenshot provided in form.",
-        "Visual component inspection processed by AI."
+      preconditions: [
+        "Sesión activa en el aplicativo web."
       ],
-      expected: language === 'ES' ? "Renderizado visual correcto." : "Correct visual component rendering.",
-      actual: inputText || (pastedImage ? (language === 'ES' ? "Inconsistencia visual detectada en la captura." : "Visual inconsistency detected in screenshot.") : "Error informado en logs."),
+      steps: [
+        "1. Ir a la pantalla principal de la aplicación.",
+        "2. Cargar o pegar la captura de pantalla / logs en el formulario.",
+        "3. Hacer clic en 'Generar Reporte con IA'."
+      ],
+      expected: language === 'ES' ? "Alineación y estilo visual correcto de los componentes." : "Correct alignment and visual styling of UI components.",
+      actual: inputText || (pastedImage ? (language === 'ES' ? "Desalineación de elementos detectada en la captura." : "Element misalignment detected in screenshot.") : "Error informado en logs."),
       rootCause: pastedImage ? "CSS Overflow / Z-Index alignment glitch" : "Analizado desde entrada de texto por IA.",
-      imagePreview: pastedImage
+      imagePreview: pastedImage,
+      aiInsights: [
+        "💡 Problema puramente cosmético/CSS sin impacto en lógica de negocio."
+      ]
     });
     setReportCount(prev => prev + 1);
   };
@@ -362,14 +478,54 @@ export default function Home() {
               <span className="text-xl">📹</span>
               <h3 className="font-semibold text-sm text-slate-200">{t.videoTitle}</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">{t.videoDesc}</p>
-            <button 
-              onClick={handleRecordVideo}
-              disabled={isRecording}
-              className="w-full py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isRecording ? t.videoRec : t.videoBtn}
-            </button>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {isMobile ? t.videoDescMobile : t.videoDescDesktop}
+            </p>
+
+            {/* Selector de Duración (1 a 60 segundos) */}
+            {!isMobile && (
+              <div className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
+                <label htmlFor="video-duration" className="text-slate-400">
+                  {t.durationLabel} <strong className="text-indigo-400">{videoDuration} seg</strong>
+                </label>
+                <input 
+                  id="video-duration"
+                  type="range" 
+                  min="1" 
+                  max="60" 
+                  value={videoDuration} 
+                  onChange={(e) => setVideoDuration(Number(e.target.value))}
+                  disabled={isRecording}
+                  className="w-1/2 accent-indigo-500 cursor-pointer"
+                />
+              </div>
+            )}
+
+            {isMobile ? (
+              <div>
+                <label 
+                  htmlFor="mobile-video-input" 
+                  className="w-full py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {t.videoBtnMobile}
+                </label>
+                <input 
+                  id="mobile-video-input" 
+                  type="file" 
+                  accept="video/*" 
+                  onChange={handleMobileVideoUpload} 
+                  className="hidden" 
+                />
+              </div>
+            ) : (
+              <button 
+                onClick={handleRecordVideo}
+                disabled={isRecording}
+                className="w-full py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isRecording ? t.videoRec : t.videoBtnDesktop}
+              </button>
+            )}
           </div>
 
           <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors space-y-3">
@@ -427,55 +583,135 @@ export default function Home() {
         {/* Resultado */}
         {generatedReport && (
           <section className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 space-y-5 animate-in fade-in duration-300 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+            
+            {/* Header del Reporte */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-3 gap-2">
               <div>
                 <h3 className="text-base font-bold text-slate-100">{generatedReport.title}</h3>
-                <p className="text-xs text-slate-400 mt-0.5">{t.moduleLabel} <span className="text-slate-300">{generatedReport.module}</span> | {t.envLabel} <span className="text-slate-300">{generatedReport.environment}</span></p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {t.moduleLabel} <span className="text-slate-300">{generatedReport.module}</span> | {t.envLabel} <span className="text-slate-300">{generatedReport.environment}</span>
+                </p>
               </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                {generatedReport.severity}
-              </span>
+
+              {/* Badges de Severidad e Impacto (P1-P4) */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                  {t.prioLabel} {generatedReport.priority}
+                </span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  {generatedReport.severity}
+                </span>
+              </div>
             </div>
 
+            {/* Precondiciones del Test */}
+            {generatedReport.preconditions && (
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-1.5 text-xs">
+                <span className="font-semibold text-purple-400">{t.precondTitle}</span>
+                <ul className="list-disc list-inside text-slate-300 font-mono text-[11px] space-y-1">
+                  {generatedReport.preconditions.map((pre: string, i: number) => (
+                    <li key={i}>{pre}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Previsualización de Captura Analizada */}
             {generatedReport.imagePreview && (
-              <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
                 <p className="text-[10px] text-slate-400 mb-2">{t.analyzedImageTag}</p>
                 <img src={generatedReport.imagePreview} alt="Captura del Bug" className="max-h-48 rounded-lg object-contain" />
               </div>
             )}
 
+            {/* Pasos Estructurados + Esperado vs Actual */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              
+              {/* Pasos para Reproducir (1, 2, 3...) */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
                 <span className="font-semibold text-indigo-400">{t.stepsTitle}</span>
-                <ol className="list-decimal list-inside space-y-1 text-slate-300 font-mono">
+                <ul className="space-y-1.5 text-slate-300 font-mono text-[11px]">
                   {generatedReport.steps.map((step: string, i: number) => (
-                    <li key={i}>{step}</li>
+                    <li key={i} className="leading-relaxed">{step}</li>
                   ))}
-                </ol>
+                </ul>
               </div>
 
+              {/* Resultado Esperado vs Obtendio */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-3">
                 <div>
                   <span className="font-semibold text-emerald-400 block mb-0.5">{t.expTitle}</span>
-                  <p className="text-slate-300">{generatedReport.expected}</p>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">{generatedReport.expected}</p>
                 </div>
                 <div>
                   <span className="font-semibold text-rose-400 block mb-0.5">{t.actTitle}</span>
-                  <p className="text-slate-300">{generatedReport.actual}</p>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">{generatedReport.actual}</p>
                 </div>
               </div>
             </div>
 
+            {/* Causa Raíz */}
             <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 text-xs font-mono">
               <span className="text-amber-400 font-semibold block mb-1">{t.rootTitle}</span>
-              <code className="text-slate-300">{generatedReport.rootCause}</code>
+              <code className="text-slate-300 text-[11px]">{generatedReport.rootCause}</code>
             </div>
 
-            <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-800">
-              <button onClick={() => setShowJiraModal(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportJira}</button>
-              <button onClick={() => setShowTrelloModal(true)} className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportTrello}</button>
-              <button onClick={() => setShowAzureModal(true)} className="px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportAzure}</button>
+            {/* Diagnóstico Predictivo e Insights de IA */}
+            {generatedReport.aiInsights && (
+              <div className="bg-slate-950 p-4 rounded-xl border border-purple-500/20 space-y-2 text-xs">
+                <span className="text-purple-400 font-semibold block">{t.aiInsightsTitle}</span>
+                <ul className="space-y-1 text-slate-300 text-[11px] font-mono">
+                  {generatedReport.aiInsights.map((insight: string, idx: number) => (
+                    <li key={idx}>{insight}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Consola de Red Parseda (HTTP 4xx/5xx) */}
+            {generatedReport.networkLogs && (
+              <div className="bg-slate-950 p-4 rounded-xl border border-rose-500/20 space-y-2">
+                <span className="text-rose-400 font-semibold text-xs block">{t.networkLogsTitle}</span>
+                <div className="space-y-2 font-mono text-[11px]">
+                  {generatedReport.networkLogs.map((log: any, idx: number) => (
+                    <div key={idx} className="bg-rose-950/20 p-2.5 rounded-lg border border-rose-900/40 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-rose-400 font-bold">{log.status}</span>
+                        <span className="text-slate-400 text-[10px]">{log.url}</span>
+                      </div>
+                      <p className="text-slate-300 text-[10px] bg-slate-900 p-1.5 rounded">{log.payload}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bloque BDD / Gherkin Generado */}
+            {gherkinText && (
+              <div className="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 space-y-2 animate-in fade-in duration-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-emerald-400 font-semibold text-xs">Formato BDD / Gherkin (Feature File):</span>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(gherkinText)}
+                    className="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded hover:bg-emerald-500/20 cursor-pointer"
+                  >
+                    📋 Copiar Gherkin
+                  </button>
+                </div>
+                <pre className="text-slate-300 font-mono text-[11px] bg-slate-900 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                  {gherkinText}
+                </pre>
+              </div>
+            )}
+
+            {/* Botones de Acción y Exportación */}
+            <div className="flex flex-wrap gap-2.5 pt-2 border-t border-slate-800">
+              <button onClick={generateGherkin} className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.btnGherkin}</button>
+              <button onClick={() => setShowJiraModal(true)} className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportJira}</button>
+              <button onClick={() => setShowTrelloModal(true)} className="px-3.5 py-2 bg-sky-500 hover:bg-sky-400 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportTrello}</button>
+              <button onClick={() => setShowAzureModal(true)} className="px-3.5 py-2 bg-blue-800 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportAzure}</button>
             </div>
+
           </section>
         )}
 
