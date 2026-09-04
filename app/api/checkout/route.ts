@@ -7,7 +7,7 @@ export async function POST() {
 
     if (!secretKey) {
       return NextResponse.json(
-        { error: 'Falta configurar STRIPE_SECRET_KEY en las variables de entorno de Vercel.' },
+        { error: 'Falta configurar STRIPE_SECRET_KEY en Vercel.' },
         { status: 500 }
       );
     }
@@ -16,7 +16,8 @@ export async function POST() {
       apiVersion: '2023-10-16' as any,
     });
 
-    const domain = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-bug-reporter-fawn.vercel.app';
+    // Dominio limpio forzado con HTTPS para evitar el error "Not a valid URL"
+    const domain = (process.env.NEXT_PUBLIC_APP_URL || 'https://ai-bug-reporter-fawn.vercel.app').replace(/\/$/, '');
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -34,8 +35,8 @@ export async function POST() {
         },
       ],
       mode: 'payment',
-      success_url: `${domain}/?success=true`,
-      cancel_url: `${domain}/?canceled=true`,
+      success_url: `${domain}?success=true`,
+      cancel_url: `${domain}?canceled=true`,
     });
 
     return NextResponse.json({ url: session.url });
