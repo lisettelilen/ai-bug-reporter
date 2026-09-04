@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16' as any,
-});
-
 export async function POST() {
   try {
-    // Usamos la URL de tu Vercel directamente para asegurar que arme el link completo de Stripe
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!secretKey) {
+      return NextResponse.json(
+        { error: 'Falta configurar STRIPE_SECRET_KEY en las variables de entorno de Vercel.' },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(secretKey, {
+      apiVersion: '2023-10-16' as any,
+    });
+
     const domain = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-bug-reporter-fawn.vercel.app';
 
     const session = await stripe.checkout.sessions.create({
