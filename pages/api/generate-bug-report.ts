@@ -1,24 +1,46 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    const { log } = req.body;
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { log } = req.body;
+
+  if (!log) {
+    return res.status(400).json({ error: 'Log is required' });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY is not configured' });
+  }
+
+  try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: log }],
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert QA engineer. Analyze the provided log or error and generate a structured bug report including: Title, Severity, Steps to Reproduce, Expected vs Actual Behavior, and Potential Solution.',
+        },
+        {
+          role: 'user',
+          content: log,
+        },
+      ],
     });
 
-    const report = formatReport(response.choices[0].message.content);
-    res.status(200).json({ report });
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    const report = response.choices[0]?.message?.content || 'No report generated.';
+    return res.status(200).json({ report });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Error generating report' });
   }
-}
-
-function formatReport(content: string) {
-  return `# Bug Report\n\n## Steps to Reproduce\n${content}\n\n## Expected vs Actual\n- Expected: [Your expected behavior]\n- Actual: [Observed behavior]\n\n## Severity\n- Severity Level: [Specify severity]\n\n## Possible Fix\n- Suggested Fix: [Provide suggestions]`;
 }
