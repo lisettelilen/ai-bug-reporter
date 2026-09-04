@@ -1,18 +1,21 @@
+import type { Metadata } from 'next';
 import './globals.css';
-import { Inter } from 'next/font/google';
-import React from 'react';
 
-const inter = Inter({ subsets: ['latin'] });
-
-export const metadata = {
-  title: 'AI Bug Reporter',
-  description: 'Report bugs using AI',
+export const metadata: Metadata = {
+  title: 'AI Bug Reporter | PRO SaaS',
+  description: 'Generá reportes con IA, analizá video/red y exportá en 1 clic.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="es" className="dark scroll-smooth">
+      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,48 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { lemonSqueezySetup, createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
+import { NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+lemonSqueezySetup({
+  apiKey: process.env.LEMONSQUEEZY_API_KEY || '',
+  onError: (error) => console.error('LemonSqueezy Error:', error),
+});
+
+export async function POST() {
   try {
-    const secretKey = process.env.STRIPE_SECRET_KEY;
+    const storeId = String(process.env.LEMONSQUEEZY_STORE_ID || '');
+    const variantId = String(process.env.LEMONSQUEEZY_VARIANT_ID || '');
 
-    if (!secretKey) {
+    if (!storeId || !variantId) {
       return NextResponse.json(
-        { error: 'Falta configurar STRIPE_SECRET_KEY en Vercel.' },
+        { error: 'Faltan configurar las variables de entorno LEMONSQUEEZY_STORE_ID o LEMONSQUEEZY_VARIANT_ID' },
         { status: 500 }
       );
     }
 
-    const stripe = new Stripe(secretKey, {
-      apiVersion: '2023-10-16' as any,
-    });
-
-    // Detectamos el origen real automáticamente desde el navegador (localhost o Vercel)
-    const origin = req.headers.get('origin') || req.headers.get('referer') || 'https://ai-bug-reporter-fawn.vercel.app';
-    const baseUrl = origin.replace(/\/$/, '');
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'AI Bug Reporter - Plan Pro',
-              description: 'Acceso ilimitado a generación de reportes e integración Jira/Trello',
-            },
-            unit_amount: 1500, // $15.00 USD
-          },
-          quantity: 1,
+    const checkout = await createCheckout(storeId, variantId, {
+      checkoutData: {
+        custom: {
+          user_id: '123',
         },
-      ],
-      mode: 'payment',
-      success_url: `${baseUrl}/?success=true`,
-      cancel_url: `${baseUrl}/?canceled=true`,
+      },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: checkout.data?.data.attributes.url });
   } catch (error: any) {
-    console.error('Error en Checkout:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error al crear checkout:', error);
+    return NextResponse.json({ error: error.message || 'Error al crear el checkout' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "autoprefixer": "^10.5.4",
     "lucide-react": "^1.40.0",
     "next": "^16.3.4",

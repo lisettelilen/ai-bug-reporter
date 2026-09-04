@@ -228,6 +228,9 @@ export default function Home() {
       const data = await res.json();
       if (res.ok) {
         alert(`¡Exportado a ${platform.toUpperCase()} con éxito!`);
+        setShowJiraModal(false);
+        setShowTrelloModal(false);
+        setShowAzureModal(false);
       } else {
         alert(data.error || `Error exportando a ${platform.toUpperCase()}`);
       }
@@ -471,36 +474,41 @@ ${stepsFormatted}
           </span>
         </div>
 
-        {/* Features Grid */}
+        {/* Features Grid - Tarjetas Alineadas con Flexbox y h-full */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">📹</span>
-              <h3 className="font-semibold text-sm text-slate-200">{t.videoTitle}</h3>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              {isMobile ? t.videoDescMobile : t.videoDescDesktop}
-            </p>
-
-            {/* Selector de Duración (1 a 60 segundos) */}
-            {!isMobile && (
-              <div className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
-                <label htmlFor="video-duration" className="text-slate-400">
-                  {t.durationLabel} <strong className="text-indigo-400">{videoDuration} seg</strong>
-                </label>
-                <input 
-                  id="video-duration"
-                  type="range" 
-                  min="1" 
-                  max="60" 
-                  value={videoDuration} 
-                  onChange={(e) => setVideoDuration(Number(e.target.value))}
-                  disabled={isRecording}
-                  className="w-1/2 accent-indigo-500 cursor-pointer"
-                />
+          
+          {/* Tarjeta 1 */}
+          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors flex flex-col justify-between h-full">
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📹</span>
+                <h3 className="font-semibold text-sm text-slate-200">{t.videoTitle}</h3>
               </div>
-            )}
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {isMobile ? t.videoDescMobile : t.videoDescDesktop}
+              </p>
 
+              {/* Selector de Duración */}
+              {!isMobile && (
+                <div className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs mt-3">
+                  <label htmlFor="video-duration" className="text-slate-400">
+                    {t.durationLabel} <strong className="text-indigo-400">{videoDuration} seg</strong>
+                  </label>
+                  <input 
+                    id="video-duration"
+                    type="range" 
+                    min="1" 
+                    max="60" 
+                    value={videoDuration} 
+                    onChange={(e) => setVideoDuration(Number(e.target.value))}
+                    disabled={isRecording}
+                    className="w-1/2 accent-indigo-500 cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Botón alineado al final */}
             {isMobile ? (
               <div>
                 <label 
@@ -528,12 +536,17 @@ ${stepsFormatted}
             )}
           </div>
 
-          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🌐</span>
-              <h3 className="font-semibold text-sm text-slate-200">{t.netTitle}</h3>
+          {/* Tarjeta 2 */}
+          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors flex flex-col justify-between h-full">
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🌐</span>
+                <h3 className="font-semibold text-sm text-slate-200">{t.netTitle}</h3>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">{t.netDesc}</p>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">{t.netDesc}</p>
+
+            {/* Botón alineado al final */}
             <button 
               onClick={handleCaptureNetwork}
               disabled={isCapturingNetwork}
@@ -593,7 +606,7 @@ ${stepsFormatted}
                 </p>
               </div>
 
-              {/* Badges de Severidad e Impacto (P1-P4) */}
+              {/* Badges de Severidad e Impacto */}
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                   {t.prioLabel} {generatedReport.priority}
@@ -627,7 +640,7 @@ ${stepsFormatted}
             {/* Pasos Estructurados + Esperado vs Actual */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               
-              {/* Pasos para Reproducir (1, 2, 3...) */}
+              {/* Pasos para Reproducir */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
                 <span className="font-semibold text-indigo-400">{t.stepsTitle}</span>
                 <ul className="space-y-1.5 text-slate-300 font-mono text-[11px]">
@@ -637,7 +650,7 @@ ${stepsFormatted}
                 </ul>
               </div>
 
-              {/* Resultado Esperado vs Obtendio */}
+              {/* Resultado Esperado vs Obtenido */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-3">
                 <div>
                   <span className="font-semibold text-emerald-400 block mb-0.5">{t.expTitle}</span>
@@ -686,86 +699,55 @@ ${stepsFormatted}
               </div>
             )}
 
-            {/* Bloque BDD / Gherkin Generado */}
+            {/* Botones de Acción / Exportación */}
+            <div className="pt-2 flex flex-wrap items-center gap-3 border-t border-slate-800">
+              <button 
+                onClick={generateGherkin}
+                className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
+              >
+                {t.btnGherkin}
+              </button>
+              
+              <button 
+                onClick={() => setShowJiraModal(true)}
+                className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
+              >
+                {t.exportJira}
+              </button>
+
+              <button 
+                onClick={() => setShowTrelloModal(true)}
+                className="px-4 py-2 bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
+              >
+                {t.exportTrello}
+              </button>
+
+              <button 
+                onClick={() => setShowAzureModal(true)}
+                className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
+              >
+                {t.exportAzure}
+              </button>
+            </div>
+
+            {/* Bloque Gherkin Generado */}
             {gherkinText && (
-              <div className="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 space-y-2 animate-in fade-in duration-200">
+              <div className="mt-4 p-4 bg-slate-950 border border-emerald-500/30 rounded-xl space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-emerald-400 font-semibold text-xs">Formato BDD / Gherkin (Feature File):</span>
+                  <span className="text-xs font-bold text-emerald-400">🥒 Feature Spec (BDD):</span>
                   <button 
                     onClick={() => navigator.clipboard.writeText(gherkinText)}
-                    className="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded hover:bg-emerald-500/20 cursor-pointer"
+                    className="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30 cursor-pointer"
                   >
-                    📋 Copiar Gherkin
+                    Copiar Gherkin
                   </button>
                 </div>
-                <pre className="text-slate-300 font-mono text-[11px] bg-slate-900 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                <pre className="text-[11px] font-mono text-slate-300 overflow-x-auto p-2 bg-slate-900/60 rounded-lg whitespace-pre-wrap">
                   {gherkinText}
                 </pre>
               </div>
             )}
-
-            {/* Botones de Acción y Exportación */}
-            <div className="flex flex-wrap gap-2.5 pt-2 border-t border-slate-800">
-              <button onClick={generateGherkin} className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.btnGherkin}</button>
-              <button onClick={() => setShowJiraModal(true)} className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportJira}</button>
-              <button onClick={() => setShowTrelloModal(true)} className="px-3.5 py-2 bg-sky-500 hover:bg-sky-400 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportTrello}</button>
-              <button onClick={() => setShowAzureModal(true)} className="px-3.5 py-2 bg-blue-800 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs transition-all shadow-md cursor-pointer">{t.exportAzure}</button>
-            </div>
-
           </section>
-        )}
-
-        {/* Modales traducidos */}
-        {showJiraModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-900 p-6 rounded-2xl shadow-2xl w-full max-w-md space-y-4 border border-slate-800">
-              <h3 className="font-semibold text-sm text-slate-100 border-b border-slate-800 pb-2">{t.modalJiraTitle}</h3>
-              <div className="space-y-3">
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder={t.modalJiraDomain} value={jiraDomain} onChange={e => setJiraDomain(e.target.value)} />
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder={t.modalJiraKey} value={jiraProjectKey} onChange={e => setJiraProjectKey(e.target.value)} />
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder={t.modalJiraEmail} value={jiraEmail} onChange={e => setJiraEmail(e.target.value)} />
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" type="password" placeholder={t.modalJiraToken} value={jiraApiToken} onChange={e => setJiraApiToken(e.target.value)} />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium cursor-pointer" onClick={() => setShowJiraModal(false)}>{t.btnCancel}</button>
-                <button className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-medium cursor-pointer" onClick={() => { handleExport('jira', { domain: jiraDomain, projectKey: jiraProjectKey, email: jiraEmail, apiToken: jiraApiToken }); setShowJiraModal(false); }}>{t.btnConnectJira}</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showTrelloModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-900 p-6 rounded-2xl shadow-2xl w-full max-w-md space-y-4 border border-slate-800">
-              <h3 className="font-semibold text-sm text-slate-100 border-b border-slate-800 pb-2">{t.modalTrelloTitle}</h3>
-              <div className="space-y-3">
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder={t.modalTrelloKey} value={trelloApiKey} onChange={e => setTrelloApiKey(e.target.value)} />
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" type="password" placeholder={t.modalTrelloToken} value={trelloToken} onChange={e => setTrelloToken(e.target.value)} />
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder={t.modalTrelloList} value={trelloListId} onChange={e => setTrelloListId(e.target.value)} />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium cursor-pointer" onClick={() => setShowTrelloModal(false)}>{t.btnCancel}</button>
-                <button className="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-medium cursor-pointer" onClick={() => { handleExport('trello', { apiKey: trelloApiKey, token: trelloToken, listId: trelloListId }); setShowTrelloModal(false); }}>{t.btnConnectTrello}</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showAzureModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-900 p-6 rounded-2xl shadow-2xl w-full max-w-md space-y-4 border border-slate-800">
-              <h3 className="font-semibold text-sm text-slate-100 border-b border-slate-800 pb-2">{t.modalAzureTitle}</h3>
-              <div className="space-y-3">
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder={t.modalAzureOrg} value={azureOrg} onChange={e => setAzureOrg(e.target.value)} />
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" placeholder={t.modalAzureProj} value={azureProject} onChange={e => setAzureProject(e.target.value)} />
-                <input className="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none" type="password" placeholder={t.modalAzurePat} value={azurePat} onChange={e => setAzurePat(e.target.value)} />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium cursor-pointer" onClick={() => setShowAzureModal(false)}>{t.btnCancel}</button>
-                <button className="px-3.5 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-xl text-xs font-medium cursor-pointer" onClick={() => { handleExport('azure', { organization: azureOrg, project: azureProject, pat: azurePat }); setShowAzureModal(false); }}>{t.btnConnectAzure}</button>
-              </div>
-            </div>
-          </div>
         )}
 
       </div>
