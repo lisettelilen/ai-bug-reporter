@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
     const secretKey = process.env.STRIPE_SECRET_KEY;
 
@@ -16,16 +16,9 @@ export async function POST() {
       apiVersion: '2023-10-16' as any,
     });
 
-    // Aseguramos una URL 100% válida con HTTPS
-    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-bug-reporter-fawn.vercel.app';
-    baseUrl = baseUrl.trim();
-    
-    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-      baseUrl = `https://${baseUrl}`;
-    }
-    
-    // Eliminamos barras al final para evitar //
-    baseUrl = baseUrl.replace(/\/+$/, '');
+    // Detectamos el origen real automáticamente desde el navegador (localhost o Vercel)
+    const origin = req.headers.get('origin') || req.headers.get('referer') || 'https://ai-bug-reporter-fawn.vercel.app';
+    const baseUrl = origin.replace(/\/$/, '');
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
