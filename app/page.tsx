@@ -196,6 +196,9 @@ export default function Home() {
       const data = await res.json();
       if (res.ok) {
         alert(`¡Exportado a ${platform.toUpperCase()} con éxito!`);
+        setShowJiraModal(false);
+        setShowTrelloModal(false);
+        setShowAzureModal(false);
       } else {
         alert(data.error || `Error exportando a ${platform.toUpperCase()}`);
       }
@@ -346,7 +349,7 @@ ${stepsFormatted}
           "🤖 Sugerencia: Aplicar patrón Circuit Breaker y aumentar timeout de conexión."
         ]
       });
-    }, 1500);
+    }, 1200);
   };
 
   // Generador manual / captura
@@ -631,8 +634,187 @@ ${stepsFormatted}
               </div>
             )}
 
+            {/* Botón Gherkin y Exportación */}
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={generateGherkin}
+                  className="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                >
+                  {t.btnGherkin}
+                </button>
+                <button
+                  onClick={() => setShowJiraModal(true)}
+                  className="px-3.5 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                >
+                  {t.exportJira}
+                </button>
+                <button
+                  onClick={() => setShowTrelloModal(true)}
+                  className="px-3.5 py-2 bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                >
+                  {t.exportTrello}
+                </button>
+                <button
+                  onClick={() => setShowAzureModal(true)}
+                  className="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                >
+                  {t.exportAzure}
+                </button>
+              </div>
+
+              {gherkinText && (
+                <div className="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 space-y-2">
+                  <span className="text-emerald-400 text-xs font-semibold block">Gherkin BDD Feature:</span>
+                  <pre className="text-slate-300 font-mono text-[11px] whitespace-pre-wrap overflow-x-auto">
+                    {gherkinText}
+                  </pre>
+                </div>
+              )}
+            </div>
+
           </section>
         )}
+
+        {/* Modal Jira */}
+        {showJiraModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+              <h3 className="text-base font-bold text-slate-100">{t.modalJiraTitle}</h3>
+              <input
+                type="text"
+                placeholder={t.modalJiraDomain}
+                value={jiraDomain}
+                onChange={(e) => setJiraDomain(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <input
+                type="text"
+                placeholder={t.modalJiraKey}
+                value={jiraProjectKey}
+                onChange={(e) => setJiraProjectKey(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <input
+                type="email"
+                placeholder={t.modalJiraEmail}
+                value={jiraEmail}
+                onChange={(e) => setJiraEmail(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <input
+                type="password"
+                placeholder={t.modalJiraToken}
+                value={jiraApiToken}
+                onChange={(e) => setJiraApiToken(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setShowJiraModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer"
+                >
+                  {t.btnCancel}
+                </button>
+                <button
+                  onClick={() => handleExport('jira', { domain: jiraDomain, projectKey: jiraProjectKey, email: jiraEmail, apiToken: jiraApiToken })}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  {t.btnConnectJira}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Trello */}
+        {showTrelloModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+              <h3 className="text-base font-bold text-slate-100">{t.modalTrelloTitle}</h3>
+              <input
+                type="text"
+                placeholder={t.modalTrelloKey}
+                value={trelloApiKey}
+                onChange={(e) => setTrelloApiKey(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <input
+                type="password"
+                placeholder={t.modalTrelloToken}
+                value={trelloToken}
+                onChange={(e) => setTrelloToken(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <input
+                type="text"
+                placeholder={t.modalTrelloList}
+                value={trelloListId}
+                onChange={(e) => setTrelloListId(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setShowTrelloModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer"
+                >
+                  {t.btnCancel}
+                </button>
+                <button
+                  onClick={() => handleExport('trello', { apiKey: trelloApiKey, token: trelloToken, listId: trelloListId })}
+                  className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  {t.btnConnectTrello}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Azure DevOps */}
+        {showAzureModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+              <h3 className="text-base font-bold text-slate-100">{t.modalAzureTitle}</h3>
+              <input
+                type="text"
+                placeholder={t.modalAzureOrg}
+                value={azureOrg}
+                onChange={(e) => setAzureOrg(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <input
+                type="text"
+                placeholder={t.modalAzureProj}
+                value={azureProject}
+                onChange={(e) => setAzureProject(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <input
+                type="password"
+                placeholder={t.modalAzurePat}
+                value={azurePat}
+                onChange={(e) => setAzurePat(e.target.value)}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200"
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setShowAzureModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs cursor-pointer"
+                >
+                  {t.btnCancel}
+                </button>
+                <button
+                  onClick={() => handleExport('azure', { org: azureOrg, project: azureProject, pat: azurePat })}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  {t.btnConnectAzure}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </main>
   );
