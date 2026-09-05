@@ -7,7 +7,6 @@ export default function Home() {
   const [pastedImage, setPastedImage] = useState<string | null>(null);
   const [generatedReport, setGeneratedReport] = useState<any>(null);
   const [language, setLanguage] = useState<'ES' | 'EN'>('ES');
-  const [reportCount, setReportCount] = useState<number>(0);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [videoDuration, setVideoDuration] = useState<number>(5);
   const [isCapturingNetwork, setIsCapturingNetwork] = useState<boolean>(false);
@@ -44,9 +43,6 @@ export default function Home() {
   const t = {
     ES: {
       subtitle: 'Generá reportes con IA, analizá video/red y exportá en 1 clic.',
-      upgrade: 'Pasar a Pro ($15/mes)',
-      usageLabel: 'Uso Plan Gratis:',
-      usageCount: 'reportes creados',
       status: 'Servidor de IA Operativo',
       videoTitle: 'Capturador de Video con IA',
       videoDescDesktop: 'Seleccioná la duración (1-60s) y tu pantalla para grabar. La IA extraerá las acciones automáticamente.',
@@ -64,7 +60,7 @@ export default function Home() {
       pastedTag: '🖼️ Captura de pantalla adjunta lista para analizar',
       pastedDelete: '✕ Eliminar',
       genBtn: 'Generar Reporte con IA',
-      
+
       // Card de Resultado
       moduleLabel: 'Módulo:',
       envLabel: 'Entorno:',
@@ -106,9 +102,6 @@ export default function Home() {
     },
     EN: {
       subtitle: 'Generate AI bug reports, analyze video/network logs and export in 1-click.',
-      upgrade: 'Upgrade to Pro ($15/mo)',
-      usageLabel: 'Free Plan Usage:',
-      usageCount: 'reports created',
       status: 'AI Server Operational',
       videoTitle: 'Video-to-Bug AI Interceptor',
       videoDescDesktop: 'Select duration (1-60s) and your screen/window to record. AI will extract steps automatically.',
@@ -186,31 +179,6 @@ export default function Home() {
     }
   };
 
-  const checkLimit = () => {
-    if (reportCount >= 5) {
-      alert(language === 'ES' 
-        ? "Alcanzaste el límite de 5 reportes del Plan Gratis. Pasate a Pro para generación ilimitada." 
-        : "You reached the 5-report limit for the Free Plan. Upgrade to Pro for unlimited generation.");
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubscribe = async () => {
-    try {
-      const res = await fetch('/api/checkout', { method: 'POST' });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert(data.error || 'Error iniciando la pasarela de pago');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error de conexión con Stripe');
-    }
-  };
-
   const handleExport = async (platform: 'jira' | 'trello' | 'azure', credentials: any) => {
     try {
       const res = await fetch('/api/export', {
@@ -228,9 +196,6 @@ export default function Home() {
       const data = await res.json();
       if (res.ok) {
         alert(`¡Exportado a ${platform.toUpperCase()} con éxito!`);
-        setShowJiraModal(false);
-        setShowTrelloModal(false);
-        setShowAzureModal(false);
       } else {
         alert(data.error || `Error exportando a ${platform.toUpperCase()}`);
       }
@@ -243,7 +208,7 @@ export default function Home() {
   // Convertidor a BDD / Gherkin
   const generateGherkin = () => {
     if (!generatedReport) return;
-    
+
     const preconditionsFormatted = generatedReport.preconditions
       ? generatedReport.preconditions.map((p: string) => `  Given ${p}`).join('\n')
       : `  Given el usuario está autenticado en el entorno ${generatedReport.environment}`;
@@ -265,8 +230,6 @@ ${stepsFormatted}
 
   // Grabador de pantalla Desktop
   const handleRecordVideo = async () => {
-    if (!checkLimit()) return;
-
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { displaySurface: 'browser' },
@@ -310,8 +273,6 @@ ${stepsFormatted}
             "🤖 Suggested tests: Add Playwright/Cypress E2E test handling null token payloads."
           ]
         });
-
-        setReportCount(prev => prev + 1);
       }, videoDuration * 1000);
 
     } catch (err) {
@@ -322,7 +283,6 @@ ${stepsFormatted}
 
   // Carga de video Mobile
   const handleMobileVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!checkLimit()) return;
     const file = e.target.files?.[0];
     if (file) {
       setGherkinText(null);
@@ -349,14 +309,11 @@ ${stepsFormatted}
           "🤖 Tests sugeridos: Simular touch events acelerados en dispositivos móviles emulados."
         ]
       });
-      setReportCount(prev => prev + 1);
     }
   };
 
   // Capturador de red (Filtro HTTP 4xx/5xx)
   const handleCaptureNetwork = () => {
-    if (!checkLimit()) return;
-
     setIsCapturingNetwork(true);
     setGherkinText(null);
 
@@ -389,14 +346,11 @@ ${stepsFormatted}
           "🤖 Sugerencia: Aplicar patrón Circuit Breaker y aumentar timeout de conexión."
         ]
       });
-      setReportCount(prev => prev + 1);
     }, 1500);
   };
 
   // Generador manual / captura
   const handleGenerateReport = () => {
-    if (!checkLimit()) return;
-
     setGherkinText(null);
     setGeneratedReport({
       title: language === 'ES' ? "Reporte Generado por Captura / Logs" : "Screenshot / Log-Based Generated Report",
@@ -420,7 +374,6 @@ ${stepsFormatted}
         "💡 Problema puramente cosmético/CSS sin impacto en lógica de negocio."
       ]
     });
-    setReportCount(prev => prev + 1);
   };
 
   return (
@@ -434,99 +387,83 @@ ${stepsFormatted}
               <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 AI Bug Reporter
               </h1>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 tracking-wide">
-                PRO SaaS
-              </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">{t.subtitle}</p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="inline-flex bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs font-medium">
-              <button 
-                onClick={() => setLanguage('ES')} 
+              <button
+                onClick={() => setLanguage('ES')}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${language === 'ES' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 <span>🇦🇷</span> <span>ES</span>
               </button>
-              <button 
-                onClick={() => setLanguage('EN')} 
+              <button
+                onClick={() => setLanguage('EN')}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${language === 'EN' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 <span>🇺🇸</span> <span>EN</span>
               </button>
             </div>
-
-            <button 
-              onClick={handleSubscribe}
-              className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl text-xs shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
-            >
-              {t.upgrade}
-            </button>
           </div>
         </header>
 
-        {/* Meter Usage */}
-        <div className="flex justify-between items-center px-4 py-2.5 bg-slate-900/40 rounded-xl border border-slate-800/80 text-xs text-slate-400">
-          <span>{t.usageLabel} <strong className="text-indigo-400 font-semibold">{reportCount}/5</strong> {t.usageCount}</span>
+        {/* Status indicator */}
+        <div className="flex justify-end items-center px-4 py-2.5 bg-slate-900/40 rounded-xl border border-slate-800/80 text-xs text-slate-400">
           <span className="text-emerald-400 font-medium flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> {t.status}
           </span>
         </div>
 
-        {/* Features Grid - Tarjetas Alineadas con Flexbox y h-full */}
+        {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-          {/* Tarjeta 1 */}
-          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors flex flex-col justify-between h-full">
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">📹</span>
-                <h3 className="font-semibold text-sm text-slate-200">{t.videoTitle}</h3>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                {isMobile ? t.videoDescMobile : t.videoDescDesktop}
-              </p>
-
-              {/* Selector de Duración */}
-              {!isMobile && (
-                <div className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs mt-3">
-                  <label htmlFor="video-duration" className="text-slate-400">
-                    {t.durationLabel} <strong className="text-indigo-400">{videoDuration} seg</strong>
-                  </label>
-                  <input 
-                    id="video-duration"
-                    type="range" 
-                    min="1" 
-                    max="60" 
-                    value={videoDuration} 
-                    onChange={(e) => setVideoDuration(Number(e.target.value))}
-                    disabled={isRecording}
-                    className="w-1/2 accent-indigo-500 cursor-pointer"
-                  />
-                </div>
-              )}
+          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📹</span>
+              <h3 className="font-semibold text-sm text-slate-200">{t.videoTitle}</h3>
             </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {isMobile ? t.videoDescMobile : t.videoDescDesktop}
+            </p>
 
-            {/* Botón alineado al final */}
+            {/* Selector de Duración (1 a 60 segundos) */}
+            {!isMobile && (
+              <div className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
+                <label htmlFor="video-duration" className="text-slate-400">
+                  {t.durationLabel} <strong className="text-indigo-400">{videoDuration} seg</strong>
+                </label>
+                <input
+                  id="video-duration"
+                  type="range"
+                  min="1"
+                  max="60"
+                  value={videoDuration}
+                  onChange={(e) => setVideoDuration(Number(e.target.value))}
+                  disabled={isRecording}
+                  className="w-1/2 accent-indigo-500 cursor-pointer"
+                />
+              </div>
+            )}
+
             {isMobile ? (
               <div>
-                <label 
-                  htmlFor="mobile-video-input" 
+                <label
+                  htmlFor="mobile-video-input"
                   className="w-full py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {t.videoBtnMobile}
                 </label>
-                <input 
-                  id="mobile-video-input" 
-                  type="file" 
-                  accept="video/*" 
-                  onChange={handleMobileVideoUpload} 
-                  className="hidden" 
+                <input
+                  id="mobile-video-input"
+                  type="file"
+                  accept="video/*"
+                  onChange={handleMobileVideoUpload}
+                  className="hidden"
                 />
               </div>
             ) : (
-              <button 
+              <button
                 onClick={handleRecordVideo}
                 disabled={isRecording}
                 className="w-full py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -536,18 +473,13 @@ ${stepsFormatted}
             )}
           </div>
 
-          {/* Tarjeta 2 */}
-          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors flex flex-col justify-between h-full">
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌐</span>
-                <h3 className="font-semibold text-sm text-slate-200">{t.netTitle}</h3>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">{t.netDesc}</p>
+          <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl hover:border-slate-700 transition-colors space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🌐</span>
+              <h3 className="font-semibold text-sm text-slate-200">{t.netTitle}</h3>
             </div>
-
-            {/* Botón alineado al final */}
-            <button 
+            <p className="text-xs text-slate-400 leading-relaxed">{t.netDesc}</p>
+            <button
               onClick={handleCaptureNetwork}
               disabled={isCapturingNetwork}
               className="w-full py-2.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -561,7 +493,7 @@ ${stepsFormatted}
         <section className="bg-slate-900/40 p-6 rounded-2xl border border-slate-800 space-y-4">
           <h2 className="text-sm font-semibold text-slate-300">{t.inputTitle}</h2>
           
-          <textarea 
+          <textarea
             rows={3}
             onPaste={handlePaste}
             className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-500 text-xs font-mono"
@@ -576,8 +508,8 @@ ${stepsFormatted}
                 <img src={pastedImage} alt="Preview" className="w-12 h-12 object-cover rounded-lg border border-indigo-500/30" />
                 <span className="text-indigo-300 font-medium">{t.pastedTag}</span>
               </div>
-              <button 
-                onClick={() => setPastedImage(null)} 
+              <button
+                onClick={() => setPastedImage(null)}
                 className="text-slate-400 hover:text-rose-400 text-xs px-2 py-1 cursor-pointer"
               >
                 {t.pastedDelete}
@@ -585,7 +517,7 @@ ${stepsFormatted}
             </div>
           )}
 
-          <button 
+          <button
             onClick={handleGenerateReport}
             className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-xs transition-colors shadow-lg shadow-indigo-600/20 cursor-pointer"
           >
@@ -606,7 +538,7 @@ ${stepsFormatted}
                 </p>
               </div>
 
-              {/* Badges de Severidad e Impacto */}
+              {/* Badges de Severidad e Impacto (P1-P4) */}
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                   {t.prioLabel} {generatedReport.priority}
@@ -640,7 +572,7 @@ ${stepsFormatted}
             {/* Pasos Estructurados + Esperado vs Actual */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               
-              {/* Pasos para Reproducir */}
+              {/* Pasos para Reproducir (1, 2, 3...) */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
                 <span className="font-semibold text-indigo-400">{t.stepsTitle}</span>
                 <ul className="space-y-1.5 text-slate-300 font-mono text-[11px]">
@@ -650,7 +582,7 @@ ${stepsFormatted}
                 </ul>
               </div>
 
-              {/* Resultado Esperado vs Obtenido */}
+              {/* Resultado Esperado vs Obtendio */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-3">
                 <div>
                   <span className="font-semibold text-emerald-400 block mb-0.5">{t.expTitle}</span>
@@ -699,57 +631,8 @@ ${stepsFormatted}
               </div>
             )}
 
-            {/* Botones de Acción / Exportación */}
-            <div className="pt-2 flex flex-wrap items-center gap-3 border-t border-slate-800">
-              <button 
-                onClick={generateGherkin}
-                className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
-              >
-                {t.btnGherkin}
-              </button>
-              
-              <button 
-                onClick={() => setShowJiraModal(true)}
-                className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
-              >
-                {t.exportJira}
-              </button>
-
-              <button 
-                onClick={() => setShowTrelloModal(true)}
-                className="px-4 py-2 bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
-              >
-                {t.exportTrello}
-              </button>
-
-              <button 
-                onClick={() => setShowAzureModal(true)}
-                className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-medium transition-all cursor-pointer"
-              >
-                {t.exportAzure}
-              </button>
-            </div>
-
-            {/* Bloque Gherkin Generado */}
-            {gherkinText && (
-              <div className="mt-4 p-4 bg-slate-950 border border-emerald-500/30 rounded-xl space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-emerald-400">🥒 Feature Spec (BDD):</span>
-                  <button 
-                    onClick={() => navigator.clipboard.writeText(gherkinText)}
-                    className="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30 cursor-pointer"
-                  >
-                    Copiar Gherkin
-                  </button>
-                </div>
-                <pre className="text-[11px] font-mono text-slate-300 overflow-x-auto p-2 bg-slate-900/60 rounded-lg whitespace-pre-wrap">
-                  {gherkinText}
-                </pre>
-              </div>
-            )}
           </section>
         )}
-
       </div>
     </main>
   );
