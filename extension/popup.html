@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-100">
+  <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+    <h1 class="text-xl font-bold mb-4">Enviar último error</h1>
+    <span id="feedback" class="text-green-500 font-semibold mb-4 hidden"></span>
+
+    <button id="send-error" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 active:bg-blue-700">
+      Enviar error a AI Bug Reporter
+    </button>
+
+    <div id="loading" class="hidden mt-2">
+      <span>Cargando...</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-100">
+  <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+    <h1 class="text-xl font-bold mb-4">Enviar último error</h1>
+    <button id="send-error" class="bg-blue-500 text-white px-4 py-2 rounded">
+      Enviar error a AI Bug Reporter
+    </button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

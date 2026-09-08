@@ -1,0 +1,74 @@
+console.log(popup.js cargado);
+
+document.getElementById('send-error').addEventListener('click', async () => {
+  console.log(Botón 'Enviar error' clicado);
+  const feedback = document.getElementById('feedback');
+  const loading = document.getElementById('loading');
+
+  feedback.classList.add('hidden');
+  loading.classList.remove('hidden');
+
+  try {
+    const data = await chrome.storage.local.get('lastError');
+    const errorInfo = data.lastError;
+
+    if (!errorInfo) {
+      feedback.textContent = 'No se encontraron errores registrados.';
+      feedback.classList.remove('hidden');
+      return;
+    }
+
+    const evidence = {
+      url: errorInfo.url,
+      statusCode: errorInfo.statusCode,
+      method: errorInfo.method,
+      timestamp: errorInfo.timestamp
+    };
+
+    const response = await fetch(
+      'http://localhost:3000/api/generate-bug-report',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ evidence })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      console.error(
+        'Generate bug report error:',
+        response.status,
+        errorText
+      );
+
+      feedback.textContent =
+        Error al generar el reporte ().;
+
+      feedback.classList.remove('hidden');
+      return;
+    }
+
+    const result = await response.json();
+
+    feedback.textContent =
+      result.report || 'La API no devolvió ningún reporte.';
+
+    feedback.classList.remove('hidden');
+
+  } catch (error) {
+    console.error('Error enviando evidencia:', error);
+
+    feedback.textContent =
+      'No se pudo conectar con AI Bug Reporter.';
+
+    feedback.classList.remove('hidden');
+
+  } finally {
+    loading.classList.add('hidden');
+  }
+});
+
