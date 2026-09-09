@@ -211,6 +211,10 @@ export default function Home() {
             const aiReport =
               reportData.report;
 
+              console.log("🔥 AI REPORT REAL:", aiReport);
+              console.log("🔥 PRIORITY REAL:", aiReport.priority);
+              console.log("🔥 PRECONDITIONS REAL:", aiReport.preconditions);
+
             const stepsToReproduce =
               aiReport.stepsToReproduce;
 
@@ -236,15 +240,33 @@ export default function Home() {
               ];
             }
 
+            // ----------------------------------------------------
+            // Normalizar reporte de Network
+            // SIN pisar los datos generados por la IA.
+            // ----------------------------------------------------
+
             const normalizedReport = {
               ...aiReport,
 
-              // Campos utilizados por la UI
               module: 'Network',
-              priority: 'Backlog',
+
+              priority:
+                aiReport.priority ??
+                'Backlog',
+
+              // La IA actualmente no devuelve severity.
+              // Por eso NO mostramos texto de fallback.
               severity:
-                'No disponible en la evidencia proporcionada.',
-              preconditions: [],
+                aiReport.severity ?? null,
+
+              // Si no hay precondiciones demostradas,
+              // mantenemos un array vacío.
+              preconditions:
+                Array.isArray(
+                  aiReport.preconditions
+                )
+                  ? aiReport.preconditions
+                  : [],
 
               steps: normalizedSteps,
 
@@ -260,18 +282,25 @@ export default function Home() {
                 aiReport.technicalCause ??
                 'No disponible en la evidencia proporcionada.',
 
-              // Conservar evidencia de red
+              // Conservar evidencia de red.
               networkLogs: [
                 {
                   status:
                     aiReport.statusCode ??
                     error.statusCode,
+
                   url: error.url,
+
                   payload:
                     `${error.method} ${error.url}`,
                 },
               ],
             };
+
+            // IMPORTANTE:
+            // Solo una llamada a setGeneratedReport.
+
+            console.log("🔥 NORMALIZED REPORT:", normalizedReport);
 
             setGeneratedReport(
               normalizedReport
@@ -572,6 +601,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error(err);
+
       alert(
         'Error de conexión al exportar'
       );
@@ -582,34 +612,44 @@ export default function Home() {
   // GHERKIN
   // ============================================================
 
-const generateGherkin = () => {
-  if (!generatedReport) return;
+  const generateGherkin = () => {
+    if (!generatedReport) return;
 
-  const hasPreconditions =
-    Array.isArray(generatedReport.preconditions) &&
-    generatedReport.preconditions.length > 0;
+    const hasPreconditions =
+      Array.isArray(
+        generatedReport.preconditions
+      ) &&
+      generatedReport.preconditions.length > 0;
 
-  const preconditionsFormatted =
-    hasPreconditions
-      ? generatedReport.preconditions
-          .map((p: string) => `  Given ${p}`)
-          .join('\n')
-      : '  Given no hay precondiciones disponibles en la evidencia proporcionada.';
+    const preconditionsFormatted =
+      hasPreconditions
+        ? generatedReport.preconditions
+            .map(
+              (p: string) =>
+                `  Given ${p}`
+            )
+            .join('\n')
+        : '  Given no hay precondiciones disponibles en la evidencia proporcionada.';
 
-  const steps = Array.isArray(generatedReport.steps)
-    ? generatedReport.steps
-    : generatedReport.steps
-      ? [generatedReport.steps]
-      : [];
+    const steps = Array.isArray(
+      generatedReport.steps
+    )
+      ? generatedReport.steps
+      : generatedReport.steps
+        ? [generatedReport.steps]
+        : [];
 
-  const stepsFormatted =
-    steps.length > 0
-      ? steps
-          .map((s: string) => `  And ${s}`)
-          .join('\n')
-      : '  And no hay pasos disponibles en la evidencia proporcionada.';
+    const stepsFormatted =
+      steps.length > 0
+        ? steps
+            .map(
+              (s: string) =>
+                `  And ${s}`
+            )
+            .join('\n')
+        : '  And no hay pasos disponibles en la evidencia proporcionada.';
 
-  const gherkin = `Feature: ${generatedReport.title}
+    const gherkin = `Feature: ${generatedReport.title}
 
   Scenario: Validar comportamiento ante fallo en ${generatedReport.module}
 ${preconditionsFormatted}
@@ -617,8 +657,8 @@ ${stepsFormatted}
     Then el sistema debería responder: "${generatedReport.expected}"
     But el resultado obtenido fue: "${generatedReport.actual}"`;
 
-  setGherkinText(gherkin);
-};
+    setGherkinText(gherkin);
+  };
 
   // ============================================================
   // GRABADOR DE PANTALLA DESKTOP
@@ -1238,6 +1278,7 @@ ${stepsFormatted}
               </div>
 
               <div className="flex items-center gap-2">
+                {/* PRIORIDAD */}
                 <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                   {
                     t.prioLabel
@@ -1247,41 +1288,49 @@ ${stepsFormatted}
                   }
                 </span>
 
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                  {
-                    generatedReport.severity
-                  }
-                </span>
+                {/* SEVERIDAD
+                    Solo se muestra si realmente existe. */}
+                {generatedReport.severity && (
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    {
+                      generatedReport.severity
+                    }
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Precondiciones */}
-            {generatedReport.preconditions && (
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-1.5 text-xs">
-                <span className="font-semibold text-purple-400">
-                  {
-                    t.precondTitle
-                  }
-                </span>
+            {Array.isArray(
+              generatedReport.preconditions
+            ) &&
+              generatedReport.preconditions.length >
+                0 && (
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-1.5 text-xs">
+                  <span className="font-semibold text-purple-400">
+                    {
+                      t.precondTitle
+                    }
+                  </span>
 
-                <ul className="list-disc list-inside text-slate-300 font-mono text-[11px] space-y-1">
-                  {
-                    generatedReport.preconditions.map(
-                      (
-                        pre: string,
-                        i: number
-                      ) => (
-                        <li
-                          key={i}
-                        >
-                          {pre}
-                        </li>
+                  <ul className="list-disc list-inside text-slate-300 font-mono text-[11px] space-y-1">
+                    {
+                      generatedReport.preconditions.map(
+                        (
+                          pre: string,
+                          i: number
+                        ) => (
+                          <li
+                            key={i}
+                          >
+                            {pre}
+                          </li>
+                        )
                       )
-                    )
-                  }
-                </ul>
-              </div>
-            )}
+                    }
+                  </ul>
+                </div>
+              )}
 
             {/* Imagen */}
             {generatedReport.imagePreview && (

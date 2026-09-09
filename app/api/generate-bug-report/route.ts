@@ -23,6 +23,8 @@ export async function POST(req: Request) {
       );
     }
 
+    console.log('PROMPT NUEVO - PRIORITY/PRECONDITIONS');
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -34,9 +36,12 @@ Eres un asistente de QA que transforma evidencia técnica en un reporte de bug.
 EVIDENCE es la única fuente de verdad.
 
 Devuelve ÚNICAMENTE un objeto JSON válido con exactamente estos campos:
+
 {
   "title": "",
   "description": "",
+  "priority": "",
+  "preconditions": [],
   "stepsToReproduce": "",
   "actualResult": "",
   "expectedResult": "",
@@ -47,24 +52,48 @@ Devuelve ÚNICAMENTE un objeto JSON válido con exactamente estos campos:
 Reglas estrictas:
 
 1. No inventes información.
+
 2. No inventes acciones realizadas por el usuario.
+
 3. No inventes pasos de reproducción.
+
 4. Si EVIDENCE no demuestra pasos de reproducción, usa:
    "No disponible en la evidencia proporcionada."
+
 5. El hecho de que exista una request GET o POST NO significa que el usuario haya realizado esa acción manualmente.
+
 6. "actualResult" debe describir únicamente lo observado en EVIDENCE.
+
 7. "expectedResult" debe ser:
    "No disponible en la evidencia proporcionada."
    salvo que EVIDENCE contenga explícitamente el resultado esperado.
+
 8. No deduzcas que un código HTTP 404, 500 u otro código sea incorrecto por sí mismo.
+
 9. "environment" debe ser:
    "No disponible en la evidencia proporcionada."
    si no existe información explícita sobre el entorno.
+
 10. "technicalCause" debe ser:
-   "No disponible en la evidencia proporcionada."
-   si la causa no está explícitamente demostrada.
-11. No agregues campos adicionales.
-12. No incluyas Markdown.
+    "No disponible en la evidencia proporcionada."
+    si la causa no está explícitamente demostrada.
+
+11. "preconditions" debe contener únicamente condiciones que estén explícitamente demostradas por EVIDENCE.
+
+12. Si EVIDENCE no permite determinar precondiciones, devuelve:
+    []
+
+13. "priority" debe ser una clasificación basada únicamente en la evidencia disponible.
+
+14. Los valores permitidos para "priority" son:
+    "Critical", "High", "Medium", "Low", "Backlog"
+
+15. Si la evidencia no demuestra suficiente impacto o severidad para asignar una prioridad superior, utiliza:
+    "Backlog"
+
+16. No agregues campos adicionales.
+
+17. No incluyas Markdown.
 `,
         },
         {
@@ -72,6 +101,7 @@ Reglas estrictas:
           content: JSON.stringify(evidence, null, 2),
         },
       ],
+
       response_format: {
         type: 'json_schema',
         json_schema: {
@@ -79,28 +109,64 @@ Reglas estrictas:
           strict: true,
           schema: {
             type: 'object',
+
             properties: {
-              title: { type: 'string' },
-              description: { type: 'string' },
-              stepsToReproduce: { type: 'string' },
-              actualResult: { type: 'string' },
-              expectedResult: { type: 'string' },
-              environment: { type: 'string' },
-              technicalCause: { type: 'string' }
+              title: {
+                type: 'string',
+              },
+
+              description: {
+                type: 'string',
+              },
+
+              priority: {
+                type: 'string',
+              },
+
+              preconditions: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+
+              stepsToReproduce: {
+                type: 'string',
+              },
+
+              actualResult: {
+                type: 'string',
+              },
+
+              expectedResult: {
+                type: 'string',
+              },
+
+              environment: {
+                type: 'string',
+              },
+
+              technicalCause: {
+                type: 'string',
+              },
             },
+
             required: [
               'title',
               'description',
+              'priority',
+              'preconditions',
               'stepsToReproduce',
               'actualResult',
               'expectedResult',
               'environment',
-              'technicalCause'
+              'technicalCause',
             ],
-            additionalProperties: false
-          }
-        }
-      }
+
+            additionalProperties: false,
+          },
+        },
+      },
     });
 
     const responseData = response.choices[0]?.message?.content;
@@ -113,6 +179,8 @@ Reglas estrictas:
     }
 
     const report = JSON.parse(responseData);
+
+    console.log('GENERATED REPORT:', report);
 
     return NextResponse.json({ report });
 

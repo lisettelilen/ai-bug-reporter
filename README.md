@@ -52,3 +52,15 @@ flowchart TD
         E -->|"JSON Response"| D
         D -->|"Backlog-Ready Ticket"| G["Jira / Linear / GitHub Issues"]
     end
+
+    ## 🧪 Automated Testing (Playwright E2E)
+
+This project features an automated End-to-End test suite implementing the **Page Object Model (POM)** pattern and API route interception.
+
+### Run Tests Locally
+```bash
+# Run E2E test suite
+npx playwright test --project=chromium
+
+# View interactive HTML report
+npx playwright show-report
