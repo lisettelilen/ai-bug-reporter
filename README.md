@@ -37,18 +37,18 @@ In modern agile environments, QA engineers spend a significant percentage of the
 ```mermaid
 flowchart TD
     subgraph Client ["Client Layer"]
-        A[Web App / User Interaction] -->|HTTP Failure / JS Error| B(Chrome Extension MV3)
-        C[Screen Recording / Manual Log] -->|Direct Input| D(Dashboard UI - Next.js)
-        B -->|Scan ID & Network Logs| D
+        A["Web App / User Interaction"] -->|"HTTP Failure / JS Error"| B["Chrome Extension MV3"]
+        C["Screen Recording / Manual Log"] -->|"Direct Input"| D["Dashboard UI - Next.js"]
+        B -->|"Scan ID & Network Logs"| D
     end
 
     subgraph Backend ["Serverless API (Next.js)"]
-        D -->|Raw Technical Payload| E[/api/generate-bug-report]
-        E -->|Structured Prompt + JSON Schema| F[LLM Engine]
-        F -->|Normalized QA Report| E
+        D -->|"Raw Technical Payload"| E["API Route (/api/generate-bug-report)"]
+        E -->|"Structured Prompt + JSON Schema"| F["LLM Engine"]
+        F -->|"Normalized QA Report"| E
     end
 
     subgraph Output ["Target Integration"]
-        E -->|JSON Response| D
-        D -->|Backlog-Ready Ticket| G[Jira / Linear / GitHub Issues]
+        E -->|"JSON Response"| D
+        D -->|"Backlog-Ready Ticket"| G["Jira / Linear / GitHub Issues"]
     end
