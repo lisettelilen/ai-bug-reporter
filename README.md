@@ -53,6 +53,15 @@ flowchart TD
         D -->|"Backlog-Ready Ticket"| G["Jira / Linear / GitHub Issues"]
     end
 
+
+## ⚠️ Known Limitations & Technical Roadmap
+
+* **Screen Recording Analysis (Experimental):**
+  * **Current State:** Video streams are captured via the native MediaStreams API and synthesized against runtime metadata. On static pages or low-entropy fallback routes (such as a generic 404 or unstyled blank screens), optical context extraction is limited and primarily infers state from browser navigation events.
+  * **Next Iteration (Roadmap):** Implementing client-side frame-diffing algorithms (HTML5 Canvas / Web Workers) to detect visual changes and extract high-confidence keyframes before dispatching payloads to vision models, paired with strict network-log fallback triggers.
+
+
+
     ## 🧪 Automated Testing (Playwright E2E)
 
 This project features an automated End-to-End test suite implementing the **Page Object Model (POM)** pattern and API route interception.
