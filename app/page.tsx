@@ -241,8 +241,7 @@ export default function Home() {
 
               // Campos utilizados por la UI
               module: 'Network',
-              priority:
-                'No disponible en la evidencia proporcionada.',
+              priority: 'Backlog',
               severity:
                 'No disponible en la evidencia proporcionada.',
               preconditions: [],
@@ -343,7 +342,7 @@ export default function Home() {
 
       moduleLabel: 'Módulo:',
       envLabel: 'Entorno:',
-      prioLabel: 'Prioridad Backlog:',
+      prioLabel: 'Prioridad:',
       precondTitle: '⚙️ Precondiciones del Test',
       analyzedImageTag: 'Captura Analizada por IA:',
       stepsTitle: '📋 Pasos para Reproducir',
@@ -424,7 +423,7 @@ export default function Home() {
 
       moduleLabel: 'Module:',
       envLabel: 'Env:',
-      prioLabel: 'Backlog Priority:',
+      prioLabel: 'Priority:',
       precondTitle: '⚙️ Test Preconditions',
       analyzedImageTag:
         'AI Analyzed Screenshot:',
@@ -583,38 +582,34 @@ export default function Home() {
   // GHERKIN
   // ============================================================
 
-  const generateGherkin = () => {
-    if (!generatedReport) return;
+const generateGherkin = () => {
+  if (!generatedReport) return;
 
-    const preconditionsFormatted =
-      generatedReport.preconditions
-        ? generatedReport.preconditions
-            .map(
-              (p: string) =>
-                `  Given ${p}`
-            )
-            .join('\n')
-        : `  Given el usuario está autenticado en el entorno ${generatedReport.environment}`;
+  const hasPreconditions =
+    Array.isArray(generatedReport.preconditions) &&
+    generatedReport.preconditions.length > 0;
 
-    const steps = Array.isArray(
-      generatedReport.steps
-    )
-      ? generatedReport.steps
-      : generatedReport.steps
-        ? [generatedReport.steps]
-        : [];
+  const preconditionsFormatted =
+    hasPreconditions
+      ? generatedReport.preconditions
+          .map((p: string) => `  Given ${p}`)
+          .join('\n')
+      : '  Given no hay precondiciones disponibles en la evidencia proporcionada.';
 
-    const stepsFormatted =
-      steps.length > 0
-        ? steps
-            .map(
-              (s: string) =>
-                `  And ${s}`
-            )
-            .join('\n')
-        : '  And realiza las acciones sobre la aplicación';
+  const steps = Array.isArray(generatedReport.steps)
+    ? generatedReport.steps
+    : generatedReport.steps
+      ? [generatedReport.steps]
+      : [];
 
-    const gherkin = `Feature: ${generatedReport.title}
+  const stepsFormatted =
+    steps.length > 0
+      ? steps
+          .map((s: string) => `  And ${s}`)
+          .join('\n')
+      : '  And no hay pasos disponibles en la evidencia proporcionada.';
+
+  const gherkin = `Feature: ${generatedReport.title}
 
   Scenario: Validar comportamiento ante fallo en ${generatedReport.module}
 ${preconditionsFormatted}
@@ -622,8 +617,8 @@ ${stepsFormatted}
     Then el sistema debería responder: "${generatedReport.expected}"
     But el resultado obtenido fue: "${generatedReport.actual}"`;
 
-    setGherkinText(gherkin);
-  };
+  setGherkinText(gherkin);
+};
 
   // ============================================================
   // GRABADOR DE PANTALLA DESKTOP
