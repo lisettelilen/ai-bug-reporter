@@ -685,7 +685,7 @@ const handleRecordVideo = async () => {
               body: JSON.stringify({
                 evidence: {
                   source: 'screen-recording',
-                  durationSeconds: recordingDuration,
+                  durationSeconds: videoDuration,
                   currentUrl: window.location.href,
                   userAgent: navigator.userAgent,
                   timestamp: new Date().toISOString()
@@ -709,12 +709,12 @@ const handleRecordVideo = async () => {
               expected: rep.expectedResult,
               actual: rep.actualResult,
               rootCause: rep.technicalCause,
-              aiInsights: [`Grabación finalizada (${recordingDuration}s).`]
+              aiInsights: [`Grabación finalizada (${videoDuration}s).`]
             });
           } catch (e) {
             console.error('Error procesando grabación:', e);
           }
-        }, recordingDuration * 1000);
+        }, videoDuration * 1000);
       } catch (err) {
         console.error('Permiso de grabación denegado:', err);
         setIsRecording(false);
