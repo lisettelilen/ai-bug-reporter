@@ -664,87 +664,62 @@ ${stepsFormatted}
   // GRABADOR DE PANTALLA DESKTOP
   // ============================================================
 
-  const handleRecordVideo = async () => {
-    try {
-      const stream =
-        await navigator.mediaDevices.getDisplayMedia(
-          {
-            video: {
-              displaySurface: 'browser',
-            },
-            audio: false,
-          }
-        );
-
-      setIsRecording(true);
-      setGherkinText(null);
-
-      setTimeout(() => {
-        stream
-          .getTracks()
-          .forEach((track) =>
-            track.stop()
-          );
-
-        setIsRecording(false);
-
-        setGeneratedReport({
-          title:
-            language === 'ES'
-              ? 'Error Crítico durante Checkout de Pago'
-              : 'Critical Checkout Payment Exception',
-          severity:
-            'BLOCKER / CRITICAL 🔴',
-          priority:
-            'P1 - Immediate Fix Required',
-          module:
-            'Payment Gateway / Frontend',
-          environment:
-            'Chrome 128 / macOS Sonoma',
-          preconditions: [
-            "Usuario autenticado con rol 'Customer'.",
-            'Carrito activo con al menos 1 producto en stock.',
-            'Método de pago habilitado en la pasarela.',
-          ],
-          steps: [
-            '1. Ir a la vista del carrito de compras con ítems agregados.',
-            "2. Hacer clic en el botón 'Pagar con Tarjeta'.",
-            "3. Ingresar las credenciales de prueba y presionar 'Confirmar Pago'.",
-            "4. Observar la pantalla de procesamiento congelada por más de 1.4s.",
-          ],
-          expected:
-            language === 'ES'
-              ? 'Redirección inmediata a la pasarela de confirmación de Stripe.'
-              : 'Immediate redirect to Stripe payment confirmation.',
-          actual:
-            language === 'ES'
-              ? 'Pantalla congelada sin respuesta visual ni confirmación al cliente.'
-              : 'Frozen UI without visual feedback or confirmation to the customer.',
-          rootCause:
-            "Uncaught TypeError: Cannot read properties of undefined (reading 'token')",
-          aiInsights:
-            language === 'ES'
-              ? [
-                  '💡 Probable regresión introducida en la v2.4.1 en el manejo de tokens asíncronos.',
-                  '⚠️ Riesgo de alto impacto: 100% de carritos bloqueados en el checkout.',
-                  '🤖 Tests sugeridos: Añadir test E2E en Playwright/Cypress cubriendo respuesta 200 con payload nulo.',
-                ]
-              : [
-                  '💡 Likely regression introduced in v2.4.1 in async token handling.',
-                  '⚠️ High-impact risk: 100% of checkout funnels currently blocked.',
-                  '🤖 Suggested tests: Add Playwright/Cypress E2E test handling null token payloads.',
-                ],
+const handleRecordVideo = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: 'browser' },
+          audio: false,
         });
-      }, videoDuration * 1000);
-    } catch (err) {
-      console.error(
-        'Permiso de grabación denegado:',
-        err
-      );
 
-      setIsRecording(false);
-    }
-  };
+        setIsRecording(true);
+        setGherkinText(null);
+
+        setTimeout(async () => {
+          stream.getTracks().forEach((track) => track.stop());
+          setIsRecording(false);
+
+          try {
+            const res = await fetch('/api/generate-bug-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                evidence: {
+                  source: 'screen-recording',
+                  durationSeconds: recordingDuration,
+                  currentUrl: window.location.href,
+                  userAgent: navigator.userAgent,
+                  timestamp: new Date().toISOString()
+                }
+              })
+            });
+
+            if (!res.ok) throw new Error('API Error');
+
+            const data = await res.json();
+            const rep = data.report;
+
+            setGeneratedReport({
+              title: rep.title,
+              severity: rep.priority === 'Critical' ? 'BLOCKER / CRITICAL 🔴' : 'MEDIUM 🟠',
+              priority: rep.priority,
+              module: 'Browser Session',
+              environment: rep.environment || navigator.userAgent,
+              preconditions: rep.preconditions || [],
+              steps: Array.isArray(rep.stepsToReproduce) ? rep.stepsToReproduce : [rep.stepsToReproduce],
+              expected: rep.expectedResult,
+              actual: rep.actualResult,
+              rootCause: rep.technicalCause,
+              aiInsights: [`Grabación finalizada (${recordingDuration}s).`]
+            });
+          } catch (e) {
+            console.error('Error procesando grabación:', e);
+          }
+        }, recordingDuration * 1000);
+      } catch (err) {
+        console.error('Permiso de grabación denegado:', err);
+        setIsRecording(false);
+      }
+    };
 
   // ============================================================
   // VIDEO MOBILE
@@ -870,53 +845,63 @@ ${stepsFormatted}
   // GENERADOR MANUAL / CAPTURA
   // ============================================================
 
-  const handleGenerateReport = () => {
-    setGherkinText(null);
+ // ============================================================
+    // GENERADOR MANUAL / CAPTURA
+    // ============================================================
+    const [isGeneratingManual, setIsGeneratingManual] = useState(false);
 
-    setGeneratedReport({
-      title:
-        language === 'ES'
-          ? 'Reporte Generado por Captura / Logs'
-          : 'Screenshot / Log-Based Generated Report',
-      severity: pastedImage
-        ? 'MINOR / VISUAL 🟡'
-        : 'MEDIUM 🟠',
-      priority: pastedImage
-        ? 'P4 - Low Priority'
-        : 'P3 - Normal Priority',
-      module: pastedImage
-        ? 'UI Layout / Inspección Visual'
-        : 'Componente General',
-      environment:
-        'Web Application',
-      preconditions: [
-        'Sesión activa en el aplicativo web.',
-      ],
-      steps: [
-        '1. Ir a la pantalla principal de la aplicación.',
-        '2. Cargar o pegar la captura de pantalla / logs en el formulario.',
-        "3. Hacer clic en 'Generar Reporte con IA'.",
-      ],
-      expected:
-        language === 'ES'
-          ? 'Alineación y estilo visual correcto de los componentes.'
-          : 'Correct alignment and visual styling of UI components.',
-      actual:
-        inputText ||
-        (pastedImage
-          ? 'No se proporcionó una descripción textual del problema.'
-          : 'No disponible en la evidencia proporcionada.'),
-      rootCause:
-        pastedImage
-          ? 'CSS Overflow / Z-Index alignment glitch'
-          : 'Analizado desde entrada de texto por IA.',
-      imagePreview:
-        pastedImage,
-      aiInsights: [
-        '💡 Problema puramente cosmético/CSS sin impacto en lógica de negocio.',
-      ],
-    });
-  };
+    const handleGenerateReport = async () => {
+      if (!inputText && !pastedImage) {
+        alert(language === 'ES' ? 'Por favor ingresá un log o pegá una captura.' : 'Please enter a log or paste a screenshot.');
+        return;
+      }
+
+      setGherkinText(null);
+      setIsGeneratingManual(true);
+
+      try {
+        const payloadEvidence = {
+          source: 'manual-input',
+          textInput: inputText,
+          hasScreenshot: Boolean(pastedImage),
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
+          timestamp: new Date().toISOString()
+        };
+
+        const res = await fetch('/api/generate-bug-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ evidence: payloadEvidence })
+        });
+
+        if (!res.ok) {
+          throw new Error(`API status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const rep = data.report;
+
+        setGeneratedReport({
+          title: rep.title,
+          severity: rep.priority === 'Critical' ? 'BLOCKER / CRITICAL 🔴' : 'MEDIUM 🟠',
+          priority: rep.priority,
+          module: 'Web Application',
+          environment: rep.environment || 'Browser Runtime',
+          preconditions: rep.preconditions || [],
+          steps: Array.isArray(rep.stepsToReproduce) ? rep.stepsToReproduce : [rep.stepsToReproduce],
+          expected: rep.expectedResult,
+          actual: rep.actualResult,
+          rootCause: rep.technicalCause,
+          imagePreview: pastedImage,
+          aiInsights: [`Prioridad sugerida: ${rep.priority}`]
+        });
+      } catch (err) {
+        console.error('Error generando reporte manual:', err);
+        alert(language === 'ES' ? 'Error al conectar con la API de IA.' : 'Failed to connect with AI API.');
+      } finally {
+        setIsGeneratingManual(false);
+      }
+    };
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">

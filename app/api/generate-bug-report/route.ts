@@ -18,12 +18,22 @@ export async function POST(req: Request) {
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
-        { report: 'Error: No se encontró OPENAI_API_KEY en .env.local.' },
-        { status: 400 }
+        { report: 'Error: No se encontró OPENAI_API_KEY en las variables de entorno.' },
+        { status: 500 }
       );
     }
 
-    console.log('PROMPT NUEVO - PRIORITY/PRECONDITIONS');
+    // Normalizar la evidencia para evitar pasar blobs o base64 masivos que rompan el contexto
+    let processedEvidence = evidence;
+    if (typeof evidence === 'object' && evidence !== null) {
+      const sanitized = { ...evidence };
+      if (sanitized.videoBlob || sanitized.recordingData) {
+        sanitized.videoSummary = 'Screen recording attached: Inspecting captured DOM / Network timeline during reproduction.';
+        delete sanitized.videoBlob;
+        delete sanitized.recordingData;
+      }
+      processedEvidence = sanitized;
+    }
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -31,77 +41,25 @@ export async function POST(req: Request) {
         {
           role: 'system',
           content: `
-Eres un asistente de QA que transforma evidencia técnica en un reporte de bug.
+Eres un Lead QA Automation & Software Testing Specialist. Tu trabajo es transformar logs técnicos, trazas de error de red y capturas de sesión en un reporte de bug profesional listo para Jira o Linear.
 
-EVIDENCE es la única fuente de verdad.
+OBJETIVO:
+Analiza la evidencia provista en EVIDENCE y genera un reporte técnico preciso y conciso.
 
-Devuelve ÚNICAMENTE un objeto JSON válido con exactamente estos campos:
-
-{
-  "title": "",
-  "description": "",
-  "priority": "",
-  "preconditions": [],
-  "stepsToReproduce": "",
-  "actualResult": "",
-  "expectedResult": "",
-  "environment": "",
-  "technicalCause": ""
-}
-
-Reglas estrictas:
-
-1. No inventes información.
-
-2. No inventes acciones realizadas por el usuario.
-
-3. No inventes pasos de reproducción.
-
-4. Si EVIDENCE no demuestra pasos de reproducción, usa:
-   "No disponible en la evidencia proporcionada."
-
-5. El hecho de que exista una request GET o POST NO significa que el usuario haya realizado esa acción manualmente.
-
-6. "actualResult" debe describir únicamente lo observado en EVIDENCE.
-
-7. "expectedResult" debe ser:
-   "No disponible en la evidencia proporcionada."
-   salvo que EVIDENCE contenga explícitamente el resultado esperado.
-
-8. No deduzcas que un código HTTP 404, 500 u otro código sea incorrecto por sí mismo.
-
-9. "environment" debe ser:
-   "No disponible en la evidencia proporcionada."
-   si no existe información explícita sobre el entorno.
-
-10. "technicalCause" debe ser:
-    "No disponible en la evidencia proporcionada."
-    si la causa no está explícitamente demostrada.
-
-11. "preconditions" debe contener únicamente condiciones que estén explícitamente demostradas por EVIDENCE.
-
-12. Si EVIDENCE no permite determinar precondiciones, devuelve:
-    []
-
-13. "priority" debe ser una clasificación basada únicamente en la evidencia disponible.
-
-14. Los valores permitidos para "priority" son:
-    "Critical", "High", "Medium", "Low", "Backlog"
-
-15. Si la evidencia no demuestra suficiente impacto o severidad para asignar una prioridad superior, utiliza:
-    "Backlog"
-
-16. No agregues campos adicionales.
-
-17. No incluyas Markdown.
+DIRECTIVAS ESPECÍFICAS:
+1. Precisión sobre especulación: Describe rigurosamente lo que la evidencia demuestra (códigos HTTP 4xx/5xx, excepciones JS, endpoints involucrados y rutas de navegación).
+2. Títulos claros: Sigue el formato "[Módulo/Ruta] - Error observado (ej. HTTP 404 Not Found al consultar recurso X)".
+3. Pasos de reproducción: Formula pasos orientados a QA basados en la traza técnica (ej. 1. Navegar a la ruta indicada. 2. Disparar el evento de red correspondiente. 3. Inspeccionar respuesta de red).
+4. Evidencia visual/404: Si la evidencia indica una pantalla de error genérica (ej. 404 Not Found, Server Crash o ruta no encontrada), especifica claramente que la ruta/recurso solicitado no existe o no devolvió payload válido. No inventes reglas de negocio no comprobables.
+5. Prioridad: Clasifica objetivamente según impacto ("Critical", "High", "Medium", "Low", "Backlog"). Un fallo 500 en endpoint central suele ser High/Critical; un 404 en recurso inexistente suele ser Medium o Low según el contexto.
+6. Idioma: Genera el contenido en español profesional y técnico.
 `,
         },
         {
           role: 'user',
-          content: JSON.stringify(evidence, null, 2),
+          content: `EVIDENCE:\n${typeof processedEvidence === 'string' ? processedEvidence : JSON.stringify(processedEvidence, null, 2)}`,
         },
       ],
-
       response_format: {
         type: 'json_schema',
         json_schema: {
@@ -109,48 +67,23 @@ Reglas estrictas:
           strict: true,
           schema: {
             type: 'object',
-
             properties: {
-              title: {
-                type: 'string',
-              },
-
-              description: {
-                type: 'string',
-              },
-
+              title: { type: 'string' },
+              description: { type: 'string' },
               priority: {
                 type: 'string',
+                enum: ['Critical', 'High', 'Medium', 'Low', 'Backlog'],
               },
-
               preconditions: {
                 type: 'array',
-                items: {
-                  type: 'string',
-                },
+                items: { type: 'string' },
               },
-
-              stepsToReproduce: {
-                type: 'string',
-              },
-
-              actualResult: {
-                type: 'string',
-              },
-
-              expectedResult: {
-                type: 'string',
-              },
-
-              environment: {
-                type: 'string',
-              },
-
-              technicalCause: {
-                type: 'string',
-              },
+              stepsToReproduce: { type: 'string' },
+              actualResult: { type: 'string' },
+              expectedResult: { type: 'string' },
+              environment: { type: 'string' },
+              technicalCause: { type: 'string' },
             },
-
             required: [
               'title',
               'description',
@@ -162,7 +95,6 @@ Reglas estrictas:
               'environment',
               'technicalCause',
             ],
-
             additionalProperties: false,
           },
         },
@@ -179,19 +111,12 @@ Reglas estrictas:
     }
 
     const report = JSON.parse(responseData);
-
-    console.log('GENERATED REPORT:', report);
-
     return NextResponse.json({ report });
-
   } catch (error: any) {
     console.error('Error en generate-bug-report:', error);
-
     return NextResponse.json(
       {
-        report: `Error en la API: ${
-          error.message || 'Error interno del servidor.'
-        }`,
+        report: `Error en la API: ${error.message || 'Error interno del servidor.'}`,
       },
       { status: 500 }
     );
