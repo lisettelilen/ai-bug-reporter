@@ -26,8 +26,10 @@ document.getElementById('send-error').addEventListener('click', async () => {
       timestamp: errorInfo.timestamp
     };
 
+    const API_BASE_URL = 'https://ai-bug-reporter-fawn.vercel.app';
+
     const response = await fetch(
-      'http://localhost:3000/api/generate-bug-report',
+      `${API_BASE_URL}/api/generate-bug-report`,
       {
         method: 'POST',
         headers: {
